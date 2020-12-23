@@ -16,22 +16,32 @@ import java.util.UUID;
 
 @Service
 public class ShoppingCartService {
+
+    @Autowired
+    private RestTemplate restTemplate;
+
     @Autowired
     private ShoppingCartRepository shoppingCartRepository;
 
-    public List<ShoppingCart> getAllCarts() {
-        // Add admin authentication here.
-        List<ShoppingCart> carts = shoppingCartRepository.findAll();
-        return carts;
+    public List<ShoppingCart> getAllCarts(String token) {
+        if (authenticateAdmin(token).matches("OK")) {
+            List<ShoppingCart> carts = shoppingCartRepository.findAll();
+            return carts;
+        } else {
+            return null;
+        }
     }
 
-    public Optional<ShoppingCart> getCart(UUID id) {
-        // Add admin authentication here.
-        return shoppingCartRepository.findById(id);
+    public Optional<ShoppingCart> getCart(String token, UUID id) {
+        if (authenticateAdmin(token).matches("OK")) {
+            return shoppingCartRepository.findById(id);
+        } else {
+            return null;
+        }
     }
 
     public Optional<ShoppingCart> getCartForUser(String token, UUID id) {
-        if (authenticate(token).matches("OK")) {
+        if (authenticateBuyer(token).matches("OK")) {
             return shoppingCartRepository.findByBuyerId(id.toString());
         } else {
             return null;
@@ -39,29 +49,36 @@ public class ShoppingCartService {
     }
 
     public void addToCart(String token, ShoppingCart cart) {
-        if (authenticate(token).matches("OK")) {
+        if (authenticateBuyer(token).matches("OK")) {
             shoppingCartRepository.save(cart);
         }
     }
 
     public void updateCart(String token, ShoppingCart cart) {
-        if (authenticate(token).matches("OK")) {
+        if (authenticateBuyer(token).matches("OK")) {
             shoppingCartRepository.save(cart);
         }
     }
 
     public void deleteCart(String token, UUID id) {
-        if (authenticate(token).matches("OK")) {
+        if (authenticateBuyer(token).matches("OK")) {
             shoppingCartRepository.deleteById(id);
         }
     }
 
-    public String authenticate(String token) {
-        RestTemplate restTemplate = new RestTemplate();
+    public String authenticateBuyer(String token) {
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", token);
         HttpEntity<String> entity = new HttpEntity<>("", headers);
-        ResponseEntity<String> responseEntity = restTemplate.exchange("http://localhost:8081/", HttpMethod.GET, entity, String.class);
+        ResponseEntity<String> responseEntity = restTemplate.exchange("http://buyer-authentication-service/buyer/authenticate", HttpMethod.GET, entity, String.class);
+        return responseEntity.getBody();
+    }
+
+    public String authenticateAdmin(String token) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", token);
+        HttpEntity<String> entity = new HttpEntity<>("", headers);
+        ResponseEntity<String> responseEntity = restTemplate.exchange("http://admin-authentication-service/admin/authenticate", HttpMethod.GET, entity, String.class);
         return responseEntity.getBody();
     }
 }

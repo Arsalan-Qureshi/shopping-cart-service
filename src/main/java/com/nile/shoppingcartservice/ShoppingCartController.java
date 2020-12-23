@@ -14,19 +14,14 @@ public class ShoppingCartController {
     @Autowired
     private ShoppingCartService shoppingCartService;
 
-    @GetMapping("/")
-    public String welcome() {
-        return "All's well!";
-    }
-
     @RequestMapping("/shopping-carts")
-    public Iterable<ShoppingCart> getAllShoppingCarts() {
-        return shoppingCartService.getAllCarts();
+    public Iterable<ShoppingCart> getAllShoppingCarts(@RequestHeader("Authorization") String token) {
+        return shoppingCartService.getAllCarts(token);
     }
 
     @RequestMapping("/shopping-carts/{id}")
-    public Optional<ShoppingCart> getCart(@PathVariable("id") String id) {
-        return shoppingCartService.getCart(UUID.fromString(id));
+    public Optional<ShoppingCart> getCart(@RequestHeader("Authorization") String token, @PathVariable("id") String id) {
+        return shoppingCartService.getCart(token, UUID.fromString(id));
     }
 
     @RequestMapping("/shopping-carts/user/{id}")
